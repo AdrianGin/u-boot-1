@@ -288,10 +288,70 @@ struct sunxi_dwc_hdmi {
 	u32 phy_status;
 };
 
+
+
+/*
+ * This is based on the A10s User Manual, and the A10s only supports
+ * composite video and not vga like the A10 / A20 does, still other
+ * than the removed vga out capability the tvencoder seems to be the same.
+ * "unknown#" registers are registers which are used in the A10 kernel code,
+ * but not documented in the A10s User Manual.
+ */
+struct sunxi_tve_reg {
+	u32 gctrl;			/* 0x000 */
+	u32 cfg0;			/* 0x004 */
+	u32 dac_cfg0;			/* 0x008 */
+	u32 filter;			/* 0x00c */
+	u32 chroma_freq;		/* 0x010 */
+	u32 porch_num;			/* 0x014 */
+	u32 unknown0;			/* 0x018 */
+	u32 line_num;			/* 0x01c */
+	u32 blank_black_level;		/* 0x020 */
+	u32 unknown1;			/* 0x024, seems to be 1 byte per dac */
+	u8 res0[0x08];			/* 0x028 */
+	u32 auto_detect_en;		/* 0x030 */
+	u32 auto_detect_int_status;	/* 0x034 */
+	u32 auto_detect_status;		/* 0x038 */
+	u32 auto_detect_debounce;	/* 0x03c */
+	u32 csc_reg0;			/* 0x040 */
+	u32 csc_reg1;			/* 0x044 */
+	u32 csc_reg2;			/* 0x048 */
+	u32 csc_reg3;			/* 0x04c */
+	u32 res1[0x2A];			/* 0x050 */
+	u32 TVE_0F8;		    /* 0x0F8 */ //Hot plugging stuff
+	u32 TVE_0FC;		    /* 0x0FC */ //Hot plugging stuff
+	u32 color_burst;		/* 0x100 */
+	u32 vsync_num;			/* 0x104 */
+	u32 notch_freq;			/* 0x108 */
+	u32 cbr_level;			/* 0x10c */
+	u32 burst_phase;		/* 0x110 */
+	u32 burst_width;		/* 0x114 */
+	u32 unknown2;			/* 0x118 */
+	u32 sync_vbi_level;		/* 0x11c */
+	u32 white_level;		/* 0x120 */
+	u32 active_num;			/* 0x124 */
+	u32 chroma_bw_gain;		/* 0x128 */
+	u32 notch_width;		/* 0x12c */
+	u32 resync_num;			/* 0x130 */
+	u32 slave_para;			/* 0x134 */
+	u32 cfg1;			/* 0x138 */
+	u32 cfg2;			/* 0x13c */
+
+	u32 res2[0x70];			/* 0x140 */
+	u32 TVE_300;		/* 0x300 */
+	u32 TVE_304;		/* 0x304 */
+	u32 TVE_308;		/* 0x308 */
+	u32 res3[0x25];			/* 0x30C */
+	u32 TVE_3A0;			/* 0x3A0 */
+
+
+};
+
 /*
  * DE register constants.
  */
-#define SUNXI_DE2_MUX0_BASE			(u8 *)(SUNXI_DE2_BASE + 0x100000)
+//#define SUNXI_DE2_MUX0_BASE			(u8 *)(SUNXI_DE2_BASE + 0x100000)
+#define SUNXI_DE2_MUX0_BASE			(u8 *)(SUNXI_DE2_BASE + 0x200000)
 
 #define SUNXI_DE2_MUX_GLB_REGS			0x00000
 #define SUNXI_DE2_MUX_BLD_REGS			0x01000
@@ -316,6 +376,7 @@ struct sunxi_dwc_hdmi {
 #define SUNXI_DE2_FORMAT_BGR_888		9
 
 #define SUNXI_DE2_MUX_GLB_CTL_RT_EN		(1 << 0)
+#define SUNXI_DE2_MUX_GLB_CTL_RT_WBPORT	(1 << 12)
 
 #define SUNXI_DE2_UI_CFG_ATTR_EN		(1 << 0)
 #define SUNXI_DE2_UI_CFG_ATTR_ALPMOD(m)		((m & 3) << 1)
@@ -372,6 +433,94 @@ struct sunxi_dwc_hdmi {
 #define HMDI_DDC_ADDR_SEG_ADDR			(0x30 << 0)
 
 #define SUNXI_HDMI_HPD_DETECT			(1 << 19)
+
+
+
+/*
+ * TVE register constants.
+ */
+#define SUNXI_TVE_GCTRL_ENABLE			(1 << 0)
+/*
+ * Select input 0 to disable dac, 1 - 4 to feed dac from tve0, 5 - 8 to feed
+ * dac from tve1. When using tve1 the mux value must be written to both tve0's
+ * and tve1's gctrl reg.
+ */
+#define SUNXI_TVE_GCTRL_DAC_INPUT_MASK(dac)	(0xf << (((dac) + 1) * 4))
+#define SUNXI_TVE_GCTRL_DAC_INPUT(dac, sel)	((sel) << (((dac) + 1) * 4))
+#define SUNXI_TVE_CFG0_VGA			0x20000000
+
+#define SUNXI_TVE_CFG0_NTSC			0x07030000
+#define SUNXI_TVE_DAC_CFG0_VGA			0x403e1ac7
+
+#ifdef CONFIG_MACH_SUN5I
+#define SUNXI_TVE_DAC_CFG0_COMPOSITE		0x433f0009
+#elif CONFIG_MACH_SUN8I_H3
+#define SUNXI_TVE_DAC_CFG0_COMPOSITE 0x433e12b1
+#define SUNXI_TVE_CFG0_PAL			0x07070001
+#define SUNXI_TVE_FILTER_COMPOSITE		0x30001400
+#define SUNXI_TVE_CHROMA_FREQ_PAL_M		0x2A098ACB
+#define SUNXI_TVE_CBR_LEVEL_PAL			0x00002929
+#define SUNXI_TVE_UNKNOWN2_PAL			0x0000A8A8
+#define SUNXI_TVE_CHROMA_BW_GAIN_COMP		0x00010000
+#define SUNXI_TVE_RESYNC_NUM_PAL		0x2005000A
+#else
+#define SUNXI_TVE_CFG0_PAL			0x07030001
+#define SUNXI_TVE_DAC_CFG0_COMPOSITE		0x403f0008
+#define SUNXI_TVE_FILTER_COMPOSITE		0x00000120
+#define SUNXI_TVE_CHROMA_FREQ_PAL_M		0x21e6efe3
+#define SUNXI_TVE_CBR_LEVEL_PAL			0x00002828
+#define SUNXI_TVE_UNKNOWN2_PAL			0x0000e0e0
+#define SUNXI_TVE_CHROMA_BW_GAIN_COMP		0x00000002
+#define SUNXI_TVE_RESYNC_NUM_PAL		0x800d000c
+#endif
+
+
+#define SUNXI_TVE_UNKNOWN0_COMPOSITE		0x00000016
+#define SUNXI_TVE_VSYNCNUM_COMPOSITE 		0x00000001
+#define SUNXI_TVE_NOTCHFREQ_PAL			    0x00000005
+#define SUNXI_TVE_SYNC_VBI_LEVEL_PAL 		0x001000FC
+#define SUNXI_TVE_WHITE_LEVEL_PAL		0x01E80320
+#define SUNXI_TVE_UNKNOWN3_COMPOSITE		0x00030001
+
+#define SUNXI_TVE_CHROMA_FREQ_PAL_NC		0x21f69446
+#define SUNXI_TVE_PORCH_NUM_PAL			0x008a0018
+#define SUNXI_TVE_PORCH_NUM_NTSC		0x00760020
+#define SUNXI_TVE_LINE_NUM_PAL			0x00160271
+#define SUNXI_TVE_LINE_NUM_NTSC			0x0016020d
+#define SUNXI_TVE_BLANK_BLACK_LEVEL_PAL		0x00fc00fc
+#define SUNXI_TVE_BLANK_BLACK_LEVEL_NTSC	0x00f0011a
+#define SUNXI_TVE_UNKNOWN1_VGA			0x00000000
+#define SUNXI_TVE_UNKNOWN1_COMPOSITE		0x18181818
+#define SUNXI_TVE_AUTO_DETECT_EN_DET_EN(dac)	(1 << ((dac) + 0))
+#define SUNXI_TVE_AUTO_DETECT_EN_INT_EN(dac)	(1 << ((dac) + 16))
+#define SUNXI_TVE_AUTO_DETECT_INT_STATUS(dac)	(1 << ((dac) + 0))
+#define SUNXI_TVE_AUTO_DETECT_STATUS_SHIFT(dac)	((dac) * 8)
+#define SUNXI_TVE_AUTO_DETECT_STATUS_MASK(dac)	(3 << ((dac) * 8))
+#define SUNXI_TVE_AUTO_DETECT_STATUS_NONE	0
+#define SUNXI_TVE_AUTO_DETECT_STATUS_CONNECTED	1
+#define SUNXI_TVE_AUTO_DETECT_STATUS_SHORT_GND	3
+#define SUNXI_TVE_AUTO_DETECT_DEBOUNCE_SHIFT(d)	((d) * 8)
+#define SUNXI_TVE_AUTO_DETECT_DEBOUNCE_MASK(d)	(0xf << ((d) * 8))
+#define SUNXI_TVE_CSC_REG0_ENABLE		(1 << 31)
+#define SUNXI_TVE_CSC_REG0			0x08440832
+#define SUNXI_TVE_CSC_REG1			0x3b6dace1
+#define SUNXI_TVE_CSC_REG2			0x0e1d13dc
+#define SUNXI_TVE_CSC_REG3			0x00108080
+#define SUNXI_TVE_COLOR_BURST_PAL_M		0x00000000
+
+#define SUNXI_TVE_CBR_LEVEL_NTSC		0x0000004f
+#define SUNXI_TVE_BURST_PHASE_NTSC		0x00000000
+#define SUNXI_TVE_BURST_WIDTH_COMPOSITE		0x0016447e
+
+#define SUNXI_TVE_UNKNOWN2_NTSC			0x0000a0a0
+#define SUNXI_TVE_SYNC_VBI_LEVEL_NTSC		0x001000f0
+#define SUNXI_TVE_ACTIVE_NUM_COMPOSITE		0x000005a0
+
+#define SUNXI_TVE_NOTCH_WIDTH_COMPOSITE		0x00000101
+
+#define SUNXI_TVE_RESYNC_NUM_NTSC		0x000e000c
+#define SUNXI_TVE_SLAVE_PARA_COMPOSITE		0x00000000
+
 
 
 #endif /* _SUNXI_DISPLAY_H */

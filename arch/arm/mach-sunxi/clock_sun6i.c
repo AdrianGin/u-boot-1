@@ -228,7 +228,7 @@ void clock_set_pll10(unsigned int clk)
 {
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
-	const int m = 2; /* 12 MHz steps */
+	const int m = 1; /* 24 MHz steps */
 
 	if (clk == 0) {
 		clrbits_le32(&ccm->pll10_cfg, CCM_PLL10_CTRL_EN);
