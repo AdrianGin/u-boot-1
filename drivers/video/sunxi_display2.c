@@ -419,7 +419,8 @@ static void sunxi_composer_mode_set(const struct ctfb_res_modes *mode,
 	setbits_le32(&de_clk_regs->rst_cfg, 5);
 
 
-	clrbits_le32(&de_clk_regs->sel_cfg, 1);
+	setbits_le32(&de_clk_regs->sel_cfg, 1);
+//	clrbits_le32(&de_clk_regs->sel_cfg, 1);
 
 	writel(SUNXI_DE2_MUX_GLB_CTL_RT_EN | SUNXI_DE2_MUX_GLB_CTL_RT_WBPORT, &de_glb_regs->ctl);
 	writel(0, &de_glb_regs->status);
@@ -446,8 +447,10 @@ static void sunxi_composer_mode_set(const struct ctfb_res_modes *mode,
 	writel(0x03010301, &de_bld_regs->bld_mode[1]);
 
 	writel(size, &de_bld_regs->output_size);
-	writel(mode->vmode & FB_VMODE_INTERLACED ? 2 : 0,
-	       &de_bld_regs->out_ctl);
+
+	//Messes up video if enabled for Composite
+	/*writel(mode->vmode & FB_VMODE_INTERLACED ? 2 : 0,
+	       &de_bld_regs->out_ctl);*/
 	writel(0, &de_bld_regs->ck_ctl);
 
 	for (i = 0; i < 4; i++) {
@@ -468,11 +471,13 @@ static void sunxi_composer_mode_set(const struct ctfb_res_modes *mode,
 	writel(0, SUNXI_DE2_MUX0_BASE + SUNXI_DE2_MUX_FCC_REGS);
 	writel(0, SUNXI_DE2_MUX0_BASE + SUNXI_DE2_MUX_DCSC_REGS);
 
-	data = SUNXI_DE2_UI_CFG_ATTR_EN |
+	/*data = SUNXI_DE2_UI_CFG_ATTR_EN |
 	       SUNXI_DE2_UI_CFG_ATTR_FMT(SUNXI_DE2_FORMAT_XRGB_8888) |
 	       SUNXI_DE2_UI_CFG_ATTR_ALPMOD(1) |
+	       SUNXI_DE2_UI_CFG_ATTR_ALPHA(0xff);*/
+	data = SUNXI_DE2_UI_CFG_ATTR_EN | SUNXI_DE2_UI_CFG_ATTR_FMT(SUNXI_DE2_FORMAT_XRGB_8888) |
+	       SUNXI_DE2_UI_CFG_ATTR_ALPMOD(1) |
 	       SUNXI_DE2_UI_CFG_ATTR_ALPHA(0xff);
-
 
 	writel(data, &de_ui_regs->cfg[0].attr);
 	writel(size, &de_ui_regs->cfg[0].size);
@@ -566,7 +571,7 @@ static void sunxi_lcdc_init(void)
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 	struct sunxi_lcdc_reg * const lcdc =
-		(struct sunxi_lcdc_reg *)SUNXI_LCD0_BASE;
+		(struct sunxi_lcdc_reg *)SUNXI_LCD1_BASE;
 
 	/* Reset off */
 	setbits_le32(&ccm->ahb_reset1_cfg, 1 << AHB_RESET_OFFSET_TCON0);
@@ -622,6 +627,7 @@ static void sunxi_lcdc_tcon1_mode_set(const struct ctfb_res_modes *mode,
 	       ((mode->vmode == FB_VMODE_INTERLACED) ?
 			SUNXI_LCDC_TCON1_CTRL_INTERLACE_ENABLE : 0) |
 	       SUNXI_LCDC_TCON1_CTRL_CLK_DELAY(clk_delay), &lcdc->tcon1_ctrl);
+
 
 	yres = mode->yres;
 	if (mode->vmode == FB_VMODE_INTERLACED)
@@ -1000,8 +1006,9 @@ static void sunxi_tvencoder_mode_set(void)
 				//writel(SUNXI_TVE_UNKNOWN1_COMPOSITE, &tve->unknown1);
 				writel(SUNXI_TVE_CBR_LEVEL_PAL, &tve->cbr_level);
 				writel(SUNXI_TVE_BURST_WIDTH_COMPOSITE, &tve->burst_width);
-				writel(SUNXI_TVE_UNKNOWN2_PAL, &tve->unknown2);
+				writel(SUNXI_TVE_CBCR_GAIN_PAL, &tve->cbr_gain);
 				writel(SUNXI_TVE_ACTIVE_NUM_COMPOSITE, &tve->active_num);
+				writel(0x00, &tve->cbr_gain);
 				writel(SUNXI_TVE_CHROMA_BW_GAIN_COMP, &tve->chroma_bw_gain);
 				writel(SUNXI_TVE_NOTCH_WIDTH_COMPOSITE, &tve->notch_width);
 				writel(SUNXI_TVE_RESYNC_NUM_PAL, &tve->resync_num);
@@ -1042,7 +1049,7 @@ static void sunxi_tvencoder_mode_set(void)
 		writel(SUNXI_TVE_UNKNOWN1_COMPOSITE, &tve->unknown1);
 		writel(SUNXI_TVE_CBR_LEVEL_PAL, &tve->cbr_level);
 		writel(SUNXI_TVE_BURST_WIDTH_COMPOSITE, &tve->burst_width);
-		writel(SUNXI_TVE_UNKNOWN2_PAL, &tve->unknown2);
+		writel(SUNXI_TVE_UNKNOWN2_PAL, &tve->cbr_gain);
 		writel(SUNXI_TVE_ACTIVE_NUM_COMPOSITE, &tve->active_num);
 		writel(SUNXI_TVE_CHROMA_BW_GAIN_COMP, &tve->chroma_bw_gain);
 		writel(SUNXI_TVE_NOTCH_WIDTH_COMPOSITE, &tve->notch_width);
@@ -1073,7 +1080,7 @@ static void sunxi_tvencoder_mode_set(void)
 		writel(SUNXI_TVE_CBR_LEVEL_NTSC, &tve->cbr_level);
 		writel(SUNXI_TVE_BURST_PHASE_NTSC, &tve->burst_phase);
 		writel(SUNXI_TVE_BURST_WIDTH_COMPOSITE, &tve->burst_width);
-		writel(SUNXI_TVE_UNKNOWN2_NTSC, &tve->unknown2);
+		writel(SUNXI_TVE_UNKNOWN2_NTSC, &tve->cbr_gain);
 		writel(SUNXI_TVE_SYNC_VBI_LEVEL_NTSC, &tve->sync_vbi_level);
 		writel(SUNXI_TVE_ACTIVE_NUM_COMPOSITE, &tve->active_num);
 		writel(SUNXI_TVE_CHROMA_BW_GAIN_COMP, &tve->chroma_bw_gain);
@@ -1299,6 +1306,7 @@ void *video_hw_init(void)
 			mode = &composite_video_modes[0];
 		else
 			mode = &composite_video_modes[1];
+
 		sunxi_display.depth = 24;
 		break;
 
@@ -1354,7 +1362,7 @@ void *video_hw_init(void)
 	graphic_device->gdfIndex = GDF_32BIT_X888RGB;
 	graphic_device->gdfBytesPP = 4;
 	graphic_device->winSizeX = mode->xres - 2 * overscan_x;
-	graphic_device->winSizeY = mode->yres - 2 * overscan_y;
+	graphic_device->winSizeY = (mode->yres - 2 * overscan_y);
 	graphic_device->plnSizeX = mode->xres * graphic_device->gdfBytesPP;
 
 	return graphic_device;

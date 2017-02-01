@@ -326,7 +326,7 @@ struct sunxi_tve_reg {
 	u32 cbr_level;			/* 0x10c */
 	u32 burst_phase;		/* 0x110 */
 	u32 burst_width;		/* 0x114 */
-	u32 unknown2;			/* 0x118 */
+	u32 cbr_gain;			/* 0x118 */
 	u32 sync_vbi_level;		/* 0x11c */
 	u32 white_level;		/* 0x120 */
 	u32 active_num;			/* 0x124 */
@@ -350,8 +350,8 @@ struct sunxi_tve_reg {
 /*
  * DE register constants.
  */
-//#define SUNXI_DE2_MUX0_BASE			(u8 *)(SUNXI_DE2_BASE + 0x100000)
-#define SUNXI_DE2_MUX0_BASE			(u8 *)(SUNXI_DE2_BASE + 0x200000)
+#define SUNXI_DE2_MUX0_BASE			(u8 *)(SUNXI_DE2_BASE + 0x100000)
+//#define SUNXI_DE2_MUX0_BASE			(u8 *)(SUNXI_DE2_BASE + 0x200000)
 
 #define SUNXI_DE2_MUX_GLB_REGS			0x00000
 #define SUNXI_DE2_MUX_BLD_REGS			0x01000
@@ -380,7 +380,11 @@ struct sunxi_tve_reg {
 
 #define SUNXI_DE2_UI_CFG_ATTR_EN		(1 << 0)
 #define SUNXI_DE2_UI_CFG_ATTR_ALPMOD(m)		((m & 3) << 1)
+#define SUNXI_DE2_UI_CFG_ATTR_FCOLOR_EN (1<<4)
 #define SUNXI_DE2_UI_CFG_ATTR_FMT(f)		((f & 0xf) << 8)
+
+#define SUNXI_DE2_UI_CFG_ATTR_ALPHA_CTRL(c)		((c & 0x3) << 16)
+
 #define SUNXI_DE2_UI_CFG_ATTR_ALPHA(a)		((a & 0xff) << 24)
 
 #define SUNXI_DE2_WH(w, h)			(((h - 1) << 16) | (w - 1))
@@ -460,7 +464,7 @@ struct sunxi_tve_reg {
 #define SUNXI_TVE_FILTER_COMPOSITE		0x30001400
 #define SUNXI_TVE_CHROMA_FREQ_PAL_M		0x2A098ACB
 #define SUNXI_TVE_CBR_LEVEL_PAL			0x00002929
-#define SUNXI_TVE_UNKNOWN2_PAL			0x0000A8A8
+#define SUNXI_TVE_CBCR_GAIN_PAL			0x0000A8A8
 #define SUNXI_TVE_CHROMA_BW_GAIN_COMP		0x00010000
 #define SUNXI_TVE_RESYNC_NUM_PAL		0x2005000A
 #else
